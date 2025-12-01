@@ -1,0 +1,103 @@
+name: Deploy - Homologação e Produção
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # Deploy automático para HOMOLOGAÇÃO
+  deploy-homolog:
+    runs-on: [self-hosted, Windows]
+    environment:
+      name: homolog
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare deploy folder (Homolog)
+        shell: powershell
+        run: |
+          $destRoot = "C:\Users\ti.08\Desktop"
+          $dest = "$destRoot\sobehomolog"
+          $date = Get-Date -Format "dd-MM"
+
+          # Fazer backup se já existir
+          if (Test-Path "$dest\index.html") {
+            $i = 1
+            $backup = "$destRoot\sobehomolog-bkp-$date"
+            $finalBackup = $backup
+
+            # Se já existir backup do mesmo dia, incrementa
+            while (Test-Path $finalBackup) {
+              $i++
+              $finalBackup = "$backup-$i"
+            }
+
+            # Cria pasta de backup e move o arquivo antigo
+            New-Item -ItemType Directory -Force -Path $finalBackup | Out-Null
+            Move-Item -Path "$dest\index.html" -Destination "$finalBackup\index.html" -Force
+            Write-Host "Backup feito em $finalBackup"
+          }
+
+      - name: Deploy to Homolog
+        shell: powershell
+        run: |
+          $dest = "C:\Users\ti.08\Desktop\sobehomolog"
+
+          # Garante que a pasta existe
+          if (-not (Test-Path $dest)) {
+            New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          }
+
+          Copy-Item -Force "index.html" "$dest\index.html"
+          Write-Host "✅ Deploy realizado em HOMOLOGAÇÃO: $dest"
+
+  # Deploy para PRODUÇÃO (requer aprovação manual)
+  deploy-production:
+    runs-on: [self-hosted, Windows]
+    needs: deploy-homolog  # Só roda depois do deploy de homolog
+    environment:
+      name: production
+      # A aprovação é configurada nas settings do repositório
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare deploy folder (Production)
+        shell: powershell
+        run: |
+          $destRoot = "C:\Users\ti.08\Desktop"
+          $dest = "$destRoot\sobeprod"
+          $date = Get-Date -Format "dd-MM"
+
+          # Fazer backup se já existir
+          if (Test-Path "$dest\index.html") {
+            $i = 1
+            $backup = "$destRoot\sobeprod-bkp-$date"
+            $finalBackup = $backup
+
+            # Se já existir backup do mesmo dia, incrementa
+            while (Test-Path $finalBackup) {
+              $i++
+              $finalBackup = "$backup-$i"
+            }
+
+            # Cria pasta de backup e move o arquivo antigo
+            New-Item -ItemType Directory -Force -Path $finalBackup | Out-Null
+            Move-Item -Path "$dest\index.html" -Destination "$finalBackup\index.html" -Force
+            Write-Host "Backup feito em $finalBackup"
+          }
+
+      - name: Deploy to Production
+        shell: powershell
+        run: |
+          $dest = "C:\Users\ti.08\Desktop\sobeprod"
+
+          # Garante que a pasta existe
+          if (-not (Test-Path $dest)) {
+            New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          }
+
+          Copy-Item -Force "index.html" "$dest\sobeprod\index.html"
+          Write-Host "✅ Deploy realizado em PRODUÇÃO: $dest"

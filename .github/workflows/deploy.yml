@@ -99,5 +99,5 @@ jobs:
             New-Item -ItemType Directory -Force -Path $dest | Out-Null
           }
 
-          Copy-Item -Force "index.html" "$dest\sobeprod\index.html"
+          Copy-Item -Force "index.html" "$dest\index.html"
           Write-Host "✅ Deploy realizado em PRODUÇÃO: $dest"
